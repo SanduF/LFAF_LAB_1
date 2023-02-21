@@ -1,7 +1,7 @@
 # Topic: Introduction to formal languages. Regular grammars. Finite Automata. 
 
 ### Course: Formal Languages & Finite Automata
-### Author: Radu Calin 
+### Author: Furdui Alexandru
 
 ----
 
@@ -15,21 +15,21 @@ The set G, with the following parameters, is called a `Grammar`:
 Example:
 ```
 Vn = {S, A, B},
-Vt = {a, b, c}, 
+Vt = {a, b, c,d}, 
 P = { 
-    S → aA     
-    A → bS    
-    S → bB   
-    A → cA    
-    A → aB  
-    B → aB   
-    B → b
+    S → bS
+    S → dA
+    A → aA     
+    A → dB 
+    A → b 
+    B → cB  
+    B → a
 }
 ```
 
 From the language, denoted `L(G)`, we can generate words, as follows:
 ```
-S -> bB -> baB -> bab
+S -> bS -> bSd -> bSA
 ```
 
 The `Finite Automaton` is an abstract model of digital computer. It has the following 5 parameters:
@@ -59,8 +59,8 @@ The `Finite Automaton` is an abstract model of digital computer. It has the foll
 The following piece of code, represents the implementation of the Grammar class. It has as the attributes of the class all the needed parameters. The logic of the class is contained in the function `generate_string()`. Also, the class has the functionality of converting itself to a FiniteAutomata.
 
 ```python
-import random 
-from automata.FiniteAutomata import FiniteAutomata
+import random
+from FiniteAutomata import FiniteAutomata
 
 
 class Grammar:
@@ -79,7 +79,7 @@ class Grammar:
     def find_next_production(self, searched_string: str) -> str:
         for s in searched_string:
             if s.isupper():
-                return s 
+                return s
 
     def get_filtered_production(self, next_production: str) -> list:
         filtered_dict = {}
@@ -89,12 +89,12 @@ class Grammar:
         return filtered_dict[next_production]
 
     def generate_string(self) -> str:
-        generated_string = self.S 
+        generated_string = self.S
         while not generated_string.islower():
             next_production = self.find_next_production(generated_string)
             next_transition = random.choice(self.get_filtered_production(next_production))
             generated_string = generated_string.replace(next_production, "")
-            generated_string += next_transition 
+            generated_string += next_transition
             print(f"Compiling... {generated_string}")
         return generated_string
 
@@ -102,25 +102,26 @@ class Grammar:
         return FiniteAutomata(self.V_n, self.V_t, self.P)
 ```
 
-The implementation of the `Transaction` class, shown below, is used in the `FiniteAutomata`. 
+The `Transaction` class, shown below, is used in the `FiniteAutomata`. 
 
 ```python
-class Transaction:
+
+  class Transaction:
 
     initial_state: str
     final_state: str
     symbol: str
 
     def __init__(
-            self, 
-            initial_state: str, 
-            symbol: str, 
+            self,
+            initial_state: str,
+            symbol: str,
             final_state: str
         ) -> None:
 
         self.initial_state = initial_state
         self.final_state = final_state
-        self.symbol = symbol 
+        self.symbol = symbol
 ```
 
 And the implementation for the `FiniteAutomata` is provided below:
@@ -130,35 +131,38 @@ from typing import Callable, Union
 from .Transaction import Transaction
 
 
-class FiniteAutomata:
+from typing import Callable, Union
+from Transaction import Transaction
 
-    Q: list 
-    Sigma: list 
-    Delta: Callable[[str, str], str] 
-    Q0: str 
-    F: Union[list, str] 
+
+class FiniteAutomata:
+    Q: list
+    Sigma: list
+    Delta: Callable[[str, str], str]
+    Q0: str
+    F: Union[list, str]
     transactions: list
 
     def __init__(
-            self, 
-            Q: list, 
-            Sigma: list, 
-            productions: dict, 
-            Q0: str = "S", 
+            self,
+            Q: list,
+            Sigma: list,
+            productions: dict,
+            Q0: str = "S",
             F: Union[list, str] = "X"
-        ) -> None:
+    ) -> None:
 
-        self.Q = Q + [F] 
+        self.Q = Q + [F]
         self.Sigma = Sigma
         self.Q0 = Q0
         self.F = F
         self.Delta = self.delta
         self.transactions = []
-        
+
         for state in self.Q[:-1]:
             for symbol in self.Sigma:
                 final_state = self.delta(state, symbol, productions)
-                if final_state is None: 
+                if final_state is None:
                     continue
                 if final_state == "":
                     final_state = self.F
@@ -171,10 +175,10 @@ class FiniteAutomata:
                 for transaction in value:
                     if transaction[0] == symbol:
                         if len(transaction) > 1:
-                            return transaction[1] 
-                        else: 
+                            return transaction[1]
+                        else:
                             return ""
-    
+
     def get_initial_state(self, symbol: str, final_state: str) -> list:
         initial_states = []
         for transaction in self.transactions:
@@ -183,7 +187,7 @@ class FiniteAutomata:
         return initial_states
 
     def is_valid_string(self, generated_string: str) -> bool:
-        initial_state = self.Q0 
+        initial_state = self.Q0
         symbol = generated_string[0]
 
         while len(generated_string) > 1:
@@ -194,17 +198,16 @@ class FiniteAutomata:
                     break
             if not state:
                 return False
-            else: 
+            else:
                 initial_state = state
             generated_string = generated_string[1:]
-            symbol = generated_string[0] if len(generated_string) > 1 else None 
+            symbol = generated_string[0] if len(generated_string) > 1 else None
 
         for transaction in self.transactions:
             if transaction.initial_state == initial_state and transaction.final_state == self.F:
                 return True
 
         return False
-
 ```
 
 The most important function is the `is_valid_string()` one, as it provides a way to check for whenever a string was generated by obeying the rules of the `Grammar` or not.
@@ -214,35 +217,45 @@ The most important function is the `is_valid_string()` one, as it provides a way
 The program is compiling a string by the use of a `Grammar`, and then checking its validation by the use of the `FiniteAutomata`, as follows:
 
 ```bash
-Compiling... aA
-Compiling... acA
-Compiling... acaB
-Compiling... acaaB
-Compiling... acaaaB
-Compiling... acaaab
-acaaab
-`acaaab` is a valid string
-Compiling... aA
-Compiling... aaB
-Compiling... aaaB
-Compiling... aaaaB
-Compiling... aaaaaB
-Compiling... aaaaab
-aaaaab
-`aaaaab` is a valid string
-Compiling... bB
-Compiling... baB
-Compiling... bab
-bab
-`bab` is a valid string
-Compiling... bB
-Compiling... bb
-bb
-`bb` is a valid string
-Compiling... bB
-Compiling... bb
-bb
-`bb` is a valid string
+Compiling... bS
+Compiling... bdA
+Compiling... bddB
+Compiling... bddcB
+Compiling... bddccB
+Compiling... bddcccB
+Compiling... bddccca
+bddccca
+`bddccca` is a valid string
+Compiling... bS
+Compiling... bbS
+Compiling... bbbS
+Compiling... bbbbS
+Compiling... bbbbbS
+Compiling... bbbbbbS
+Compiling... bbbbbbdA
+Compiling... bbbbbbddB
+Compiling... bbbbbbddcB
+Compiling... bbbbbbddca
+bbbbbbddca
+`bbbbbbddca` is a valid string
+Compiling... dA
+Compiling... daA
+Compiling... dab
+dab
+`dab` is a valid string
+Compiling... bS
+Compiling... bdA
+Compiling... bdaA
+Compiling... bdab
+bdab
+`bdab` is a valid string
+Compiling... dA
+Compiling... db
+db
+`db` is a valid string
+
+Process finished with exit code 0
+
 ``` 
 
 ## References
